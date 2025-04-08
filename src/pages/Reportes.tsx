@@ -35,11 +35,6 @@ type Sector = {
   nombre: string;
 };
 
-type Pregunta = {
-  id: string;
-  texto: string;
-};
-
 type ResultadoPregunta = {
   pregunta: string;
   opcion: string;
@@ -63,7 +58,6 @@ const COLORES = {
 
 const Reportes = () => {
   const [sectores, setSectores] = useState<Sector[]>([]);
-  const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
   const [sectorSeleccionado, setSectorSeleccionado] = useState<string>('');
   const [resultados, setResultados] = useState<ResultadoPregunta[]>([]);
   const [resultadosAgrupados, setResultadosAgrupados] = useState<ResultadoAgrupado>({});
@@ -83,24 +77,6 @@ const Reportes = () => {
     }
   };
 
-  // Cargar preguntas
-  const cargarPreguntas = async (sectorId: string) => {
-    const { data, error } = await supabase
-      .from('preguntas')
-      .select('id, texto, encuesta_id, encuestas!inner(sector_id)')
-      .eq('encuestas.sector_id', sectorId);
-    
-    if (error) {
-      console.error('Error al cargar preguntas:', error);
-      setError('No se pudieron cargar las preguntas');
-    } else {
-      setPreguntas(data || []);
-      if (data && data.length > 0) {
-        setPreguntaSeleccionada(data[0].texto);
-      }
-    }
-  };
-
   // Cargar resultados
   const cargarResultados = async (sectorId: string) => {
     setCargando(true);
@@ -115,11 +91,13 @@ const Reportes = () => {
         console.error('Error al cargar resultados:', error);
         setError('No se pudieron cargar los resultados');
       } else {
-        setResultados(data || []);
+        // Asegurarse de que data es un array y convertirlo al tipo ResultadoPregunta
+        const resultadosData = (data || []) as ResultadoPregunta[];
+        setResultados(resultadosData);
         
         // Agrupar resultados por pregunta y opción
         const agrupados: ResultadoAgrupado = {};
-        data.forEach((item: ResultadoPregunta) => {
+        resultadosData.forEach((item: ResultadoPregunta) => {
           if (!agrupados[item.pregunta]) {
             agrupados[item.pregunta] = {};
           }
@@ -127,6 +105,14 @@ const Reportes = () => {
         });
         
         setResultadosAgrupados(agrupados);
+        
+        // Establecer la primera pregunta como seleccionada si hay datos
+        if (resultadosData.length > 0) {
+          const preguntas = [...new Set(resultadosData.map(item => item.pregunta))];
+          if (preguntas.length > 0) {
+            setPreguntaSeleccionada(preguntas[0]);
+          }
+        }
       }
     } catch (err) {
       console.error('Error inesperado:', err);
@@ -144,7 +130,6 @@ const Reportes = () => {
   // Cuando cambia el sector seleccionado
   useEffect(() => {
     if (sectorSeleccionado) {
-      cargarPreguntas(sectorSeleccionado);
       cargarResultados(sectorSeleccionado);
     }
   }, [sectorSeleccionado]);
