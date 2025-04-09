@@ -17,18 +17,24 @@ type Encuesta = {
   };
 };
 
+type OpcionRespuesta = {
+  id: string;
+  texto: string;
+};
+
 const ResponderEncuesta = () => {
   const { id } = useParams<{ id: string }>();
   const [encuesta, setEncuesta] = useState<Encuesta | null>(null);
   const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
   const [respuestas, setRespuestas] = useState<{ [key: string]: number }>({});
+  const [opciones, setOpciones] = useState<OpcionRespuesta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [exito, setExito] = useState(false);
 
-  // Función para cargar la encuesta y sus preguntas
-  const cargarEncuesta = async () => {
+  // Función para cargar la encuesta, preguntas y opciones de respuesta
+  const cargarDatos = async () => {
     if (!id) return;
     
     setCargando(true);
@@ -53,8 +59,17 @@ const ResponderEncuesta = () => {
       
       if (preguntasError) throw preguntasError;
       
+      // Cargar opciones de respuesta
+      const { data: opcionesData, error: opcionesError } = await supabase
+        .from('opciones_respuesta')
+        .select('*')
+        .order('texto');
+      
+      if (opcionesError) throw opcionesError;
+      
       setEncuesta(encuestaData);
       setPreguntas(preguntasData || []);
+      setOpciones(opcionesData || []);
       
       // Inicializar respuestas con valor 0
       const respuestasIniciales: { [key: string]: number } = {};
@@ -63,8 +78,8 @@ const ResponderEncuesta = () => {
       });
       setRespuestas(respuestasIniciales);
     } catch (error: any) {
-      console.error('Error al cargar la encuesta:', error);
-      setError('No se pudo cargar la encuesta. ' + error.message);
+      console.error('Error al cargar datos:', error);
+      setError('No se pudieron cargar los datos. ' + error.message);
     } finally {
       setCargando(false);
     }
@@ -80,7 +95,7 @@ const ResponderEncuesta = () => {
 
   // Función para enviar las respuestas
   const enviarRespuestas = async () => {
-    if (!id || !encuesta) return;
+    if (!id || !encuesta || opciones.length < 5) return;
     
     // Verificar que todas las preguntas tengan respuesta
     const preguntasSinResponder = preguntas.filter(pregunta => respuestas[pregunta.id] === 0);
@@ -92,13 +107,24 @@ const ResponderEncuesta = () => {
     setEnviando(true);
     setError('');
     try {
+      // Mapear valores numéricos (1-5) a UUIDs de opciones
+      const opcionesMap: { [key: number]: string } = {};
+      
+      // Asumimos que las opciones están ordenadas del 1 al 5
+      // Si no es así, necesitaríamos una lógica adicional para mapear correctamente
+      opciones.forEach((opcion, index) => {
+        opcionesMap[index + 1] = opcion.id;
+      });
+      
       // Crear un registro para cada respuesta
-      const respuestasParaInsertar = Object.entries(respuestas).map(([preguntaId, valor]) => ({
-        pregunta_id: preguntaId,
-        encuesta_id: id,
-        valor: valor,
-        fecha: new Date().toISOString()
-      }));
+      const respuestasParaInsertar = Object.entries(respuestas)
+        .filter(([_, valor]) => valor !== 0)
+        .map(([preguntaId, valor]) => ({
+          pregunta_id: preguntaId,
+          opcion_id: opcionesMap[valor] // Usar el UUID correspondiente al valor numérico
+        }));
+      
+      console.log("Respuestas a insertar:", respuestasParaInsertar); // Para depuración
       
       const { error } = await supabase
         .from('respuestas')
@@ -115,9 +141,9 @@ const ResponderEncuesta = () => {
     }
   };
 
-  // Cargar la encuesta al montar el componente
+  // Cargar datos al montar el componente
   useEffect(() => {
-    cargarEncuesta();
+    cargarDatos();
   }, [id]);
 
   // Si se está cargando, mostrar indicador
@@ -230,7 +256,7 @@ const ResponderEncuesta = () => {
           <div className="flex justify-center">
             <button
               onClick={enviarRespuestas}
-              disabled={enviando}
+              disabled={enviando || opciones.length < 5}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition duration-200 disabled:opacity-50"
             >
               {enviando ? 'Enviando...' : 'Enviar Respuestas'}
