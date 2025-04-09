@@ -356,27 +356,12 @@ const DashboardPage = () => {
     ],
   } : { labels: [], datasets: [] };
 
-// Modificar la función exportarPDF para mejorar la calidad
+// Función mejorada para exportar a PDF con renderizado correcto de gráficos
 const exportarPDF = async () => {
     if (!reporteRef.current) return;
     
     try {
       setExportandoPDF(true);
-      
-      // Preparar el elemento para la captura
-      // Guardamos los estilos originales para restaurarlos después
-      const elementosConFondo = reporteRef.current.querySelectorAll('.bg-white, .bg-gray-50');
-      const estilosOriginales = Array.from(elementosConFondo).map(el => ({
-        element: el,
-        backgroundColor: (el as HTMLElement).style.backgroundColor,
-        boxShadow: (el as HTMLElement).style.boxShadow
-      }));
-      
-      // Aplicar estilos temporales para la captura
-      elementosConFondo.forEach(el => {
-        (el as HTMLElement).style.backgroundColor = 'white';
-        (el as HTMLElement).style.boxShadow = 'none';
-      });
       
       // Obtener el nombre del sector para el título del PDF
       const nombreSector = obtenerNombreSector();
@@ -384,6 +369,7 @@ const exportarPDF = async () => {
       // Crear un nuevo documento PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       
       // Añadir título al PDF
       pdf.setFontSize(18);
@@ -405,23 +391,83 @@ const exportarPDF = async () => {
       }
       pdf.text(periodoTexto, pageWidth / 2, 27, { align: 'center' });
       
-      // Capturar el contenido del reporte como imagen con mejor calidad
-      const canvas = await html2canvas(reporteRef.current, {
-        scale: 2, // Aumentar la escala para mejor calidad
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: '#ffffff' // Fondo blanco explícito
-      });
+      // Esperar a que los gráficos se rendericen completamente
+      // Esto es crucial para asegurar que los gráficos estén listos antes de capturarlos
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Restaurar los estilos originales
-      estilosOriginales.forEach(item => {
-        (item.element as HTMLElement).style.backgroundColor = item.backgroundColor;
-        (item.element as HTMLElement).style.boxShadow = item.boxShadow;
+      // Capturar el contenido del reporte como imagen
+      const canvas = await html2canvas(reporteRef.current, {
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000, // Aumentar el tiempo de espera para imágenes
+        logging: true, // Activar logs para depuración
+        onclone: (clonedDoc, clonedElement) => {
+          // Asegurarse de que todos los elementos sean visibles en el clon
+          const allElements = clonedElement.querySelectorAll('*');
+          allElements.forEach(el => {
+            if (el instanceof HTMLElement) {
+              // Hacer visible cualquier elemento oculto que contenga canvas (gráficos)
+              if (el.style.display === 'none' && el.querySelector('canvas')) {
+                el.style.display = 'block';
+              }
+              
+              // Asegurar que los elementos con gráficos tengan altura y ancho
+              if (el.querySelector('canvas')) {
+                if (el.style.height === '0px' || !el.style.height) {
+                  el.style.height = 'auto';
+                }
+                if (el.style.width === '0px' || !el.style.width) {
+                  el.style.width = '100%';
+                }
+              }
+              
+              // Eliminar cualquier estilo que pueda ocultar contenido
+              el.style.overflow = 'visible';
+              
+              // Asegurar que los textos sean legibles
+              if (el.tagName === 'SELECT') {
+                const selectedOption = el.querySelector('option:checked');
+                if (selectedOption) {
+                  const textSpan = clonedDoc.createElement('div');
+                  textSpan.style.fontWeight = 'bold';
+                  textSpan.style.padding = '8px';
+                  textSpan.style.border = '1px solid #ccc';
+                  textSpan.style.borderRadius = '4px';
+                  textSpan.style.marginBottom = '10px';
+                  textSpan.textContent = selectedOption.textContent || '';
+                  el.parentNode?.insertBefore(textSpan, el);
+                  el.style.display = 'none';
+                }
+              }
+            }
+          });
+          
+          // Asegurar que los contenedores de gráficos tengan dimensiones adecuadas
+          const chartContainers = clonedElement.querySelectorAll('.h-80');
+          chartContainers.forEach(container => {
+            if (container instanceof HTMLElement) {
+              container.style.height = '300px';
+              container.style.width = '100%';
+              container.style.maxWidth = '100%';
+              container.style.position = 'relative';
+            }
+          });
+          
+          // Forzar que los elementos con fondo tengan fondo blanco
+          const bgElements = clonedElement.querySelectorAll('.bg-white, .bg-gray-50, .bg-gray-100');
+          bgElements.forEach(el => {
+            if (el instanceof HTMLElement) {
+              el.style.backgroundColor = '#ffffff';
+              el.style.boxShadow = 'none';
+            }
+          });
+        }
       });
       
       // Convertir el canvas a una imagen
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       
       // Calcular la altura proporcional para mantener la relación de aspecto
       const imgWidth = pageWidth - 20; // Margen de 10mm en cada lado
@@ -430,14 +476,15 @@ const exportarPDF = async () => {
       // Si la imagen es muy grande, dividirla en múltiples páginas
       let heightLeft = imgHeight;
       let position = 35; // Posición inicial después del título y fecha
+      let pageCount = 1;
       
       // Añadir la primera parte de la imagen
       pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= (pdf.internal.pageSize.getHeight() - position);
+      heightLeft -= (pageHeight - position);
       
       // Si hay más contenido, añadir nuevas páginas
       while (heightLeft > 0) {
-        position = 10; // Margen superior en las páginas siguientes
+        pageCount++;
         pdf.addPage();
         pdf.addImage(
           imgData, 
@@ -447,19 +494,18 @@ const exportarPDF = async () => {
           imgWidth, 
           imgHeight
         );
-        heightLeft -= (pdf.internal.pageSize.getHeight() - position);
+        heightLeft -= pageHeight;
       }
       
       // Añadir pie de página
-      const totalPages = pdf.internal.pages.length - 1;
-      for (let i = 1; i <= totalPages; i++) {
+      for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setTextColor(100, 100, 100);
         pdf.text(
-          `Página ${i} de ${totalPages}`, 
+          `Página ${i} de ${pageCount}`, 
           pageWidth / 2, 
-          pdf.internal.pageSize.getHeight() - 10, 
+          pageHeight - 10, 
           { align: 'center' }
         );
       }
