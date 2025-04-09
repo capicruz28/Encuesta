@@ -254,14 +254,14 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Selecciona un sector
+              Selecciona una comisaria
             </label>
             <select
               value={sectorSeleccionado}
               onChange={handleSectorChange}
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Selecciona un sector</option>
+              <option value="">Selecciona una comisaria</option>
               {sectores.map((sector) => (
                 <option key={sector.id} value={sector.id}>
                   {sector.nombre}

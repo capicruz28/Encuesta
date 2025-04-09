@@ -279,7 +279,7 @@ const Encuestas = () => {
               onChange={(e) => setSectorSeleccionado(e.target.value)}
               className="border rounded p-2 w-full"
             >
-              <option value="">Selecciona un sector</option>
+              <option value="">Selecciona una comisaria</option>
               {sectores.map((sector) => (
                 <option key={sector.id} value={sector.id}>
                   {sector.nombre}

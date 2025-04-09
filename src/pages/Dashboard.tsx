@@ -62,7 +62,7 @@ const Dashboard = () => {
   // Opciones de menú con iconos
   const opcionesMenu: OpcionMenu[] = [
     { ruta: '/dashboard', nombre: 'Dashboard', icono: <FaHome size={20} />, visible: true },
-    { ruta: '/dashboard/sectores', nombre: 'Sectores', icono: <FaBuilding size={20} />, visible: true },
+    { ruta: '/dashboard/sectores', nombre: 'Comisarias', icono: <FaBuilding size={20} />, visible: true },
     { ruta: '/dashboard/encuestas', nombre: 'Encuestas', icono: <FaClipboardList size={20} />, visible: true },
     { ruta: '/dashboard/preguntas', nombre: 'Preguntas', icono: <FaQuestion size={20} />, visible: true },
     { ruta: '/dashboard/llenar', nombre: 'Llenar Encuesta', icono: <FaEdit size={20} />, visible: true },

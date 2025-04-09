@@ -17,6 +17,15 @@ type Encuesta = {
   };
 };
 
+// Definimos las etiquetas para cada valor de la escala
+const etiquetasValoracion = {
+  1: "",
+  2: "",
+  3: "",
+  4: "",
+  5: ""
+};
+
 const ResponderEncuesta = () => {
   const { id } = useParams<{ id: string }>();
   const [encuesta, setEncuesta] = useState<Encuesta | null>(null);
@@ -193,24 +202,32 @@ const ResponderEncuesta = () => {
                 <h3 className="font-medium mb-3">
                   {index + 1}. {pregunta.texto}
                 </h3>
-                <div className="flex flex-col sm:flex-row justify-between items-center">
-                  <div className="flex items-center mb-2 sm:mb-0">
-                    <span className="text-red-500 mr-2">Malo</span>
-                    <span className="text-yellow-500 mx-2">Regular</span>
-                    <span className="text-green-500 ml-2">Excelente</span>
+                <div className="flex flex-col space-y-4">
+                  {/* Escala de valoración con etiquetas */}
+                  <div className="flex justify-between text-sm text-gray-600 px-2">
+                    <span className="text-red-500">Muy Malo</span>
+                    <span className="text-red-400">Malo</span>
+                    <span className="text-yellow-500">Regular</span>
+                    <span className="text-green-400">Bueno</span>
+                    <span className="text-green-500">Muy Bueno</span>
                   </div>
-                  <div className="flex space-x-2">
+                  
+                  {/* Botones de valoración */}
+                  <div className="flex justify-between">
                     {[1, 2, 3, 4, 5].map((valor) => (
                       <button
                         key={valor}
                         onClick={() => handleRespuestaChange(pregunta.id, valor)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                        className={`w-16 h-16 rounded-full flex flex-col items-center justify-center transition-colors ${
                           respuestas[pregunta.id] === valor
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                         }`}
                       >
-                        {valor}
+                        <span className="text-lg font-bold">{valor}</span>
+                        <span className="text-xs mt-1">
+                          {etiquetasValoracion[valor as keyof typeof etiquetasValoracion]}
+                        </span>
                       </button>
                     ))}
                   </div>

@@ -29,8 +29,8 @@ const Sectores = () => {
       }
       setSectores(data || []);
     } catch (error: any) {
-      console.error('Error al cargar sectores:', error);
-      setError('No se pudieron cargar los sectores. ' + error.message);
+      console.error('Error al cargar comisarias:', error);
+      setError('No se pudieron cargar los comisarias. ' + error.message);
     } finally {
       setCargando(false);
     }
@@ -39,7 +39,7 @@ const Sectores = () => {
   // Función para agregar un nuevo sector
   const agregarSector = async () => {
     if (nuevoSector.trim() === '') {
-      setError('El nombre del sector no puede estar vacío');
+      setError('El nombre de la comisaria no puede estar vacío');
       return;
     }
     
@@ -53,8 +53,8 @@ const Sectores = () => {
       setNuevoSector('');
       cargarSectores();
     } catch (error: any) {
-      console.error('Error al agregar sector:', error);
-      setError('No se pudo agregar el sector. ' + error.message);
+      console.error('Error al agregar comisaria:', error);
+      setError('No se pudo agregar la comisaria. ' + error.message);
     } finally {
       setCargando(false);
     }
@@ -75,7 +75,7 @@ const Sectores = () => {
   // Función para guardar los cambios de la edición
   const guardarEdicion = async () => {
     if (nombreEditado.trim() === '') {
-      setError('El nombre del sector no puede estar vacío');
+      setError('El nombre de la comisaria no puede estar vacío');
       return;
     }
     
@@ -94,8 +94,8 @@ const Sectores = () => {
       setEditandoId(null);
       cargarSectores();
     } catch (error: any) {
-      console.error('Error al actualizar sector:', error);
-      setError('No se pudo actualizar el sector. ' + error.message);
+      console.error('Error al actualizar comisaria:', error);
+      setError('No se pudo actualizar la comisaria. ' + error.message);
     } finally {
       setCargando(false);
     }
@@ -127,7 +127,7 @@ const Sectores = () => {
       }
       
       if (encuestasAsociadas && encuestasAsociadas.length > 0) {
-        setError(`No se puede eliminar este sector porque tiene ${encuestasAsociadas.length} encuesta(s) asociada(s).`);
+        setError(`No se puede eliminar esta comisaria porque tiene ${encuestasAsociadas.length} encuesta(s) asociada(s).`);
         setConfirmandoEliminacion(null);
         setCargando(false);
         return;
@@ -145,8 +145,8 @@ const Sectores = () => {
       setConfirmandoEliminacion(null);
       cargarSectores();
     } catch (error: any) {
-      console.error('Error al eliminar sector:', error);
-      setError('No se pudo eliminar el sector. ' + error.message);
+      console.error('Error al eliminar comisaria:', error);
+      setError('No se pudo eliminar la comisaria. ' + error.message);
     } finally {
       setCargando(false);
     }
@@ -159,17 +159,17 @@ const Sectores = () => {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h1 className="text-2xl font-bold mb-6">Mantenimiento de Sectores</h1>
+      <h1 className="text-2xl font-bold mb-6">Mantenimiento de Comisarias</h1>
       
       {/* Formulario para agregar nuevo sector */}
       <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-        <h2 className="text-lg font-semibold mb-3">Agregar Nuevo Sector</h2>
+        <h2 className="text-lg font-semibold mb-3">Agregar Nueva Comisaria</h2>
         <div className="flex flex-col md:flex-row gap-2">
           <input
             type="text"
             value={nuevoSector}
             onChange={(e) => setNuevoSector(e.target.value)}
-            placeholder="Nombre del sector"
+            placeholder="Nombre de la comisaria"
             className="flex-1 border rounded p-2"
           />
           <button
@@ -177,7 +177,7 @@ const Sectores = () => {
             disabled={cargando}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-200"
           >
-            {cargando ? 'Agregando...' : 'Agregar Sector'}
+            {cargando ? 'Agregando...' : 'Agregar Comisaria'}
           </button>
         </div>
       </div>
@@ -191,15 +191,15 @@ const Sectores = () => {
       
       {/* Lista de sectores */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Sectores Existentes</h2>
+        <h2 className="text-lg font-semibold mb-3">Comisarias Existentes</h2>
         
         {cargando && sectores.length === 0 ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-2 text-gray-500">Cargando sectores...</p>
+            <p className="mt-2 text-gray-500">Cargando comisarias...</p>
           </div>
         ) : sectores.length === 0 ? (
-          <p className="text-gray-500 italic py-4">No hay sectores registrados.</p>
+          <p className="text-gray-500 italic py-4">No hay comisarias registrados.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
