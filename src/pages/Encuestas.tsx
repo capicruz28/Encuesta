@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { FaEdit, FaTrash, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCheck, FaTimes, FaQrcode } from 'react-icons/fa';
+import { QRCodeSVG } from 'qrcode.react';
 
 // Define los tipos para sectores y encuestas
 type Sector = {
@@ -28,6 +29,7 @@ const Encuestas = () => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const [confirmandoEliminacion, setConfirmandoEliminacion] = useState<string | null>(null);
+  const [mostrandoQR, setMostrandoQR] = useState<string | null>(null);
 
   // Función para cargar datos desde Supabase
   const cargarDatos = async () => {
@@ -186,6 +188,61 @@ const Encuestas = () => {
     } finally {
       setCargando(false);
     }
+  };
+
+  // Función para mostrar el código QR de una encuesta
+  const mostrarQR = (id: string) => {
+    setMostrandoQR(id);
+  };
+
+  // Función para cerrar el modal del QR
+  const cerrarQR = () => {
+    setMostrandoQR(null);
+  };
+
+  // Función para generar la URL de la encuesta
+  const generarURLEncuesta = (id: string) => {
+    // Usa la URL base de tu aplicación
+    return `${window.location.origin}/responder-encuesta/${id}`;
+  };
+
+  // Función para descargar el código QR como imagen
+  const descargarQR = () => {
+    if (!mostrandoQR) return;
+    
+    const svgElement = document.getElementById('qr-code-canvas');
+    if (!svgElement) return;
+    
+    // Crear un canvas temporal
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const img = new Image();
+    
+    // Convertir SVG a imagen
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    img.onload = () => {
+      // Configurar el canvas con el tamaño adecuado
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Dibujar la imagen en el canvas
+      ctx?.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      
+      // Convertir el canvas a PNG y descargar
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `qr-encuesta-${mostrandoQR}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+    
+    img.src = url;
   };
 
   // Cargar datos al montar el componente
@@ -354,6 +411,13 @@ const Encuestas = () => {
                           >
                             <FaTrash />
                           </button>
+                          <button
+                            onClick={() => mostrarQR(encuesta.id)}
+                            className="text-purple-500 hover:text-purple-700"
+                            title="Generar QR"
+                          >
+                            <FaQrcode />
+                          </button>
                         </div>
                       )}
                     </td>
@@ -364,6 +428,51 @@ const Encuestas = () => {
           </div>
         )}
       </div>
+
+      {/* Modal para mostrar el código QR */}
+      {mostrandoQR && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">
+              Código QR para la encuesta
+            </h3>
+            <div className="flex flex-col items-center mb-4">
+              <QRCodeSVG
+                id="qr-code-canvas"
+                value={generarURLEncuesta(mostrandoQR)}
+                size={250}
+                level="H"
+                includeMargin={true}
+              />
+              <p className="mt-4 text-sm text-gray-600 text-center">
+                Escanea este código QR para acceder a la encuesta o comparte el siguiente enlace:
+              </p>
+              <a 
+                href={generarURLEncuesta(mostrandoQR)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline mt-2 text-sm break-all"
+              >
+                {generarURLEncuesta(mostrandoQR)}
+              </a>
+            </div>
+            <div className="flex justify-between">
+              <button
+                onClick={descargarQR}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200"
+              >
+                Descargar QR
+              </button>
+              <button
+                onClick={cerrarQR}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition duration-200"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

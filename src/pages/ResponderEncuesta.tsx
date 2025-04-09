@@ -1,0 +1,240 @@
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+
+// Define los tipos para las preguntas y respuestas
+type Pregunta = {
+  id: string;
+  texto: string;
+  encuesta_id: string;
+};
+
+type Encuesta = {
+  id: string;
+  nombre: string;
+  sector?: {
+    nombre: string;
+  };
+};
+
+const ResponderEncuesta = () => {
+  const { id } = useParams<{ id: string }>();
+  const [encuesta, setEncuesta] = useState<Encuesta | null>(null);
+  const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
+  const [respuestas, setRespuestas] = useState<{ [key: string]: number }>({});
+  const [cargando, setCargando] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
+  const [exito, setExito] = useState(false);
+
+  // Función para cargar la encuesta y sus preguntas
+  const cargarEncuesta = async () => {
+    if (!id) return;
+    
+    setCargando(true);
+    setError('');
+    try {
+      // Cargar información de la encuesta
+      const { data: encuestaData, error: encuestaError } = await supabase
+        .from('encuestas')
+        .select('*, sector:sector_id(nombre)')
+        .eq('id', id)
+        .single();
+      
+      if (encuestaError) throw encuestaError;
+      if (!encuestaData) throw new Error('Encuesta no encontrada');
+      
+      // Cargar preguntas de la encuesta
+      const { data: preguntasData, error: preguntasError } = await supabase
+        .from('preguntas')
+        .select('*')
+        .eq('encuesta_id', id)
+        .order('texto');
+      
+      if (preguntasError) throw preguntasError;
+      
+      setEncuesta(encuestaData);
+      setPreguntas(preguntasData || []);
+      
+      // Inicializar respuestas con valor 0
+      const respuestasIniciales: { [key: string]: number } = {};
+      preguntasData?.forEach(pregunta => {
+        respuestasIniciales[pregunta.id] = 0;
+      });
+      setRespuestas(respuestasIniciales);
+    } catch (error: any) {
+      console.error('Error al cargar la encuesta:', error);
+      setError('No se pudo cargar la encuesta. ' + error.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Función para manejar el cambio en las respuestas
+  const handleRespuestaChange = (preguntaId: string, valor: number) => {
+    setRespuestas(prev => ({
+      ...prev,
+      [preguntaId]: valor
+    }));
+  };
+
+  // Función para enviar las respuestas
+  const enviarRespuestas = async () => {
+    if (!id || !encuesta) return;
+    
+    // Verificar que todas las preguntas tengan respuesta
+    const preguntasSinResponder = preguntas.filter(pregunta => respuestas[pregunta.id] === 0);
+    if (preguntasSinResponder.length > 0) {
+      setError(`Por favor responde todas las preguntas antes de enviar.`);
+      return;
+    }
+    
+    setEnviando(true);
+    setError('');
+    try {
+      // Crear un registro para cada respuesta
+      const respuestasParaInsertar = Object.entries(respuestas).map(([preguntaId, valor]) => ({
+        pregunta_id: preguntaId,
+        encuesta_id: id,
+        valor: valor,
+        fecha: new Date().toISOString()
+      }));
+      
+      const { error } = await supabase
+        .from('respuestas')
+        .insert(respuestasParaInsertar);
+      
+      if (error) throw error;
+      
+      setExito(true);
+    } catch (error: any) {
+      console.error('Error al enviar respuestas:', error);
+      setError('No se pudieron enviar las respuestas. ' + error.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  // Cargar la encuesta al montar el componente
+  useEffect(() => {
+    cargarEncuesta();
+  }, [id]);
+
+  // Si se está cargando, mostrar indicador
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando encuesta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si hay un error, mostrarlo
+  if (error && !exito) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow p-6 max-w-md w-full">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-200"
+          >
+            Intentar nuevamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Si se enviaron las respuestas con éxito
+  if (exito) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow p-6 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-green-600 mb-2">¡Gracias por tu participación!</h1>
+          <p className="text-gray-700 mb-6">Tus respuestas han sido registradas correctamente.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar la encuesta
+  return (
+    <div className="min-h-screen bg-gray-100 py-8 px-4">
+      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-2">{encuesta?.nombre}</h1>
+        {encuesta?.sector?.nombre && (
+          <p className="text-gray-600 mb-6">Sector: {encuesta.sector.nombre}</p>
+        )}
+        
+        {/* Mensaje de error */}
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {/* Lista de preguntas */}
+        <div className="space-y-6 mb-8">
+          {preguntas.length === 0 ? (
+            <p className="text-gray-500 italic">Esta encuesta no tiene preguntas.</p>
+          ) : (
+            preguntas.map((pregunta, index) => (
+              <div key={pregunta.id} className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium mb-3">
+                  {index + 1}. {pregunta.texto}
+                </h3>
+                <div className="flex flex-col sm:flex-row justify-between items-center">
+                  <div className="flex items-center mb-2 sm:mb-0">
+                    <span className="text-red-500 mr-2">Malo</span>
+                    <span className="text-yellow-500 mx-2">Regular</span>
+                    <span className="text-green-500 ml-2">Excelente</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    {[1, 2, 3, 4, 5].map((valor) => (
+                      <button
+                        key={valor}
+                        onClick={() => handleRespuestaChange(pregunta.id, valor)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                          respuestas[pregunta.id] === valor
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                        }`}
+                      >
+                        {valor}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Botón para enviar respuestas */}
+        {preguntas.length > 0 && (
+          <div className="flex justify-center">
+            <button
+              onClick={enviarRespuestas}
+              disabled={enviando}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition duration-200 disabled:opacity-50"
+            >
+              {enviando ? 'Enviando...' : 'Enviar Respuestas'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ResponderEncuesta;
