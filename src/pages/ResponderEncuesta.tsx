@@ -199,7 +199,7 @@ const ResponderEncuesta = () => {
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold mb-2">{encuesta?.nombre}</h1>
         {encuesta?.sector?.nombre && (
-          <p className="text-gray-600 mb-6">Sector: {encuesta.sector.nombre}</p>
+          <p className="text-gray-600 mb-6">Comisaria: {encuesta.sector.nombre}</p>
         )}
         
         {/* Mensaje de error */}
