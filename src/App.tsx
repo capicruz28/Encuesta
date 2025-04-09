@@ -1,6 +1,8 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import DashboardPage from './pages/DashboardPage'; // Asegúrate de importar esto
 import Sectores from './pages/Sectores';
 import Encuestas from './pages/Encuestas';
 import Preguntas from './pages/Preguntas';
@@ -13,6 +15,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />}>
+          <Route index element={<DashboardPage />} /> {/* Esta línea es crucial */}
           <Route path="sectores" element={<Sectores />} />
           <Route path="encuestas" element={<Encuestas />} />
           <Route path="preguntas" element={<Preguntas />} />
