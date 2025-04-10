@@ -521,6 +521,8 @@ const exportarPDF = async () => {
     }
   };
 
+
+
   // Obtener el nombre del sector seleccionado
   const obtenerNombreSector = () => {
     const sector = sectores.find(s => s.id === sectorSeleccionado);
