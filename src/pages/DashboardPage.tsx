@@ -56,7 +56,7 @@ const COLORES = {
   'Muy bueno': '#4CAF50',
   'Bueno': '#2196F3',
   'Regular': '#FFC107',
-  'Malo': '#FF5722',
+  'Malo': '#FF9933',
   'Muy malo': '#F44336'
 };
 
@@ -100,7 +100,7 @@ const DashboardPage = () => {
     
     try {
       // Modificar para incluir filtro por fecha si es necesario
-      let params: any = { sector_id: sectorId };
+      let params: any = { p_sector_id: sectorId };
       
       if (periodoSeleccionado === 'personalizado' && fechaInicio && fechaFin) {
         params.fecha_inicio = fechaInicio;
@@ -117,7 +117,7 @@ const DashboardPage = () => {
         params.fecha_fin = hoy.toISOString();
       }
       
-      const { data, error } = await supabase.rpc('obtener_reporte_por_sector', params);
+      const { data, error } = await supabase.rpc('obtener_reporte_por_sector_fecha', params);
 
       if (error) {
         console.error('Error al cargar resultados:', error);
