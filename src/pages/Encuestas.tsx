@@ -70,7 +70,7 @@ const Encuestas = () => {
     }
     
     if (!sectorSeleccionado) {
-      setError('Debes seleccionar un sector');
+      setError('Debes seleccionar una comisaria');
       return;
     }
     
@@ -116,7 +116,7 @@ const Encuestas = () => {
     }
     
     if (!sectorEditado) {
-      setError('Debes seleccionar un sector');
+      setError('Debes seleccionar una comisaria');
       return;
     }
     
@@ -272,7 +272,7 @@ const Encuestas = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sector
+              Comisaria
             </label>
             <select
               value={sectorSeleccionado}
@@ -321,7 +321,7 @@ const Encuestas = () => {
               <thead>
                 <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Nombre</th>
-                  <th className="py-3 px-6 text-left">Sector</th>
+                  <th className="py-3 px-6 text-left">Comisaria</th>
                   <th className="py-3 px-6 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -348,7 +348,7 @@ const Encuestas = () => {
                           onChange={(e) => setSectorEditado(e.target.value)}
                           className="border rounded p-1 w-full"
                         >
-                          <option value="">Selecciona un sector</option>
+                          <option value="">Selecciona una comisaria</option>
                           {sectores.map((sector) => (
                             <option key={sector.id} value={sector.id}>
                               {sector.nombre}
