@@ -93,7 +93,7 @@ const ResponderEncuesta = () => {
     }));
   };
 
-  // Función para enviar las respuestas
+  // Función para enviar las respuestas (CORREGIDA)
   const enviarRespuestas = async () => {
     if (!id || !encuesta || opciones.length < 5) return;
     
@@ -107,14 +107,27 @@ const ResponderEncuesta = () => {
     setEnviando(true);
     setError('');
     try {
-      // Mapear valores numéricos (1-5) a UUIDs de opciones
+      // Crear un mapa de valor numérico a ID de opción basado en el texto
       const opcionesMap: { [key: number]: string } = {};
       
-      // Asumimos que las opciones están ordenadas del 1 al 5
-      // Si no es así, necesitaríamos una lógica adicional para mapear correctamente
-      opciones.forEach((opcion, index) => {
-        opcionesMap[index + 1] = opcion.id;
+      // Mapeo explícito de valores a textos de opciones
+      const textoAValor: { [key: string]: number } = {
+        'Muy malo': 1,
+        'Malo': 2,
+        'Regular': 3,
+        'Bueno': 4,
+        'Muy bueno': 5
+      };
+      
+      // Crear el mapa inverso: de valor numérico a ID de opción
+      opciones.forEach(opcion => {
+        const valor = textoAValor[opcion.texto];
+        if (valor) {
+          opcionesMap[valor] = opcion.id;
+        }
       });
+      
+      console.log("Mapa de opciones:", opcionesMap); // Para depuración
       
       // Crear un registro para cada respuesta
       const respuestasParaInsertar = Object.entries(respuestas)
@@ -231,7 +244,13 @@ const ResponderEncuesta = () => {
                   </div>
                   
                   <div className="grid grid-cols-5 gap-2">
-                    {[1, 2, 3, 4, 5].map((valor) => (
+                    {[
+                      { valor: 1, texto: 'Muy malo' },
+                      { valor: 2, texto: 'Malo' },
+                      { valor: 3, texto: 'Regular' },
+                      { valor: 4, texto: 'Bueno' },
+                      { valor: 5, texto: 'Muy bueno' }
+                    ].map(({ valor, texto }) => (
                       <button
                         key={valor}
                         onClick={() => handleRespuestaChange(pregunta.id, valor)}
@@ -240,6 +259,8 @@ const ResponderEncuesta = () => {
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                         }`}
+                        aria-label={texto}
+                        title={texto}
                       >
                         <span className="text-lg font-bold">{valor}</span>
                       </button>

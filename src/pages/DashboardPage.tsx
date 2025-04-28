@@ -102,7 +102,7 @@ const DashboardPage = () => {
       // Modificar para incluir filtro por fecha si es necesario
       let params: any = { p_sector_id: sectorId };
       
-      if (periodoSeleccionado === 'personalizado' && fechaInicio && fechaFin) {
+      if (periodoSeleccionado === 'personalizado' && fechaInicio && fechaFin) {        
         params.fecha_inicio = fechaInicio;
         params.fecha_fin = fechaFin;
       } else if (periodoSeleccionado === 'mes') {
