@@ -63,10 +63,12 @@ const Dashboard = () => {
   const opcionesMenu: OpcionMenu[] = [
     { ruta: '/dashboard', nombre: 'Dashboard', icono: <FaHome size={20} />, visible: true },
     { ruta: '/dashboard/sectores', nombre: 'Comisarias', icono: <FaBuilding size={20} />, visible: true },
+    { ruta: '/dashboard/secciones', nombre: 'Secciones', icono: <FaBuilding size={20} />, visible: true },
     { ruta: '/dashboard/encuestas', nombre: 'Encuestas', icono: <FaClipboardList size={20} />, visible: true },
     { ruta: '/dashboard/preguntas', nombre: 'Preguntas', icono: <FaQuestion size={20} />, visible: true },
     { ruta: '/dashboard/llenar', nombre: 'Llenar Encuesta', icono: <FaEdit size={20} />, visible: true },
     { ruta: '/dashboard/reportes', nombre: 'Reportes', icono: <FaChartBar size={20} />, visible: false }, // Oculto
+    { ruta: '/dashboard/generarqr', nombre: 'Generar QR', icono: <FaChartBar size={20} />, visible: true }, // Oculto
   ];
 
   // Filtrar solo las opciones visibles para mostrar en el menú

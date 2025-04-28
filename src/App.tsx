@@ -9,6 +9,8 @@ import Preguntas from './pages/Preguntas';
 import LlenarEncuesta from './pages/LlenarEncuesta';
 import Reportes from './pages/Reportes';
 import ResponderEncuesta from './pages/ResponderEncuesta'; // Importamos el nuevo componente
+import GeneradorQR from './pages/GenerarQR';
+import Secciones from './pages/Secciones';
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
           <Route path="preguntas" element={<Preguntas />} />
           <Route path="llenar" element={<LlenarEncuesta />} />
           <Route path="reportes" element={<Reportes />} />
+          <Route path="generarqr" element={<GeneradorQR />} />
+          <Route path="secciones" element={<Secciones />} />
         </Route>
       </Routes>
     </Router>
