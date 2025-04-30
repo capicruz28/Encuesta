@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient'; // Asegúrate que la ruta sea correcta
 import { FaEdit, FaTrash, FaCheck, FaTimes } from 'react-icons/fa';
 
 // Define los tipos para sectores y secciones
@@ -12,7 +12,7 @@ type Seccion = {
   id: string;
   nombre: string;
   sector_id: string;
-  sector?: {
+  sector?: { // La relación puede ser opcional si la carga falla
     nombre: string;
   };
 };
@@ -28,6 +28,9 @@ const Secciones = () => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const [confirmandoEliminacion, setConfirmandoEliminacion] = useState<string | null>(null);
+  // --- INICIO: Código añadido para el filtro ---
+  const [filtroSector, setFiltroSector] = useState('');
+  // --- FIN: Código añadido para el filtro ---
 
   // Función para cargar datos desde Supabase
   const cargarDatos = async () => {
@@ -39,17 +42,17 @@ const Secciones = () => {
         .from('sectores')
         .select('*')
         .order('nombre');
-      
+
       if (sectoresError) throw sectoresError;
-      
+
       // Cargar secciones con información del sector
       const { data: seccionesData, error: seccionesError } = await supabase
         .from('secciones')
-        .select('*, sector:sector_id(nombre)')
+        .select('*, sector:sector_id(nombre)') // Verifica que la relación esté bien definida
         .order('nombre');
-      
+
       if (seccionesError) throw seccionesError;
-      
+
       setSectores(sectoresData || []);
       setSecciones(seccionesData || []);
     } catch (error: any) {
@@ -66,21 +69,21 @@ const Secciones = () => {
       setError('El nombre de la sección no puede estar vacío');
       return;
     }
-    
+
     if (!sectorSeleccionado) {
       setError('Debes seleccionar una comisaria');
       return;
     }
-    
+
     setCargando(true);
     setError('');
     try {
       const { error } = await supabase.from('secciones').insert([
         { nombre: nuevoNombre, sector_id: sectorSeleccionado },
       ]);
-      
+
       if (error) throw error;
-      
+
       setNuevoNombre('');
       setSectorSeleccionado('');
       cargarDatos();
@@ -112,25 +115,27 @@ const Secciones = () => {
       setError('El nombre de la sección no puede estar vacío');
       return;
     }
-    
+
     if (!sectorEditado) {
       setError('Debes seleccionar una comisaria');
       return;
     }
-    
+
+    if (!editandoId) return; // Seguridad
+
     setCargando(true);
     setError('');
     try {
       const { error } = await supabase
         .from('secciones')
-        .update({ 
+        .update({
           nombre: nombreEditado,
-          sector_id: sectorEditado 
+          sector_id: sectorEditado
         })
         .eq('id', editandoId);
-      
+
       if (error) throw error;
-      
+
       setEditandoId(null);
       cargarDatos();
     } catch (error: any) {
@@ -157,27 +162,27 @@ const Secciones = () => {
     setError('');
     try {
       // Primero verificamos si hay respuestas asociadas a esta sección
-      const { data: respuestasAsociadas, error: errorConsulta } = await supabase
+      const { error: errorConsulta, count } = await supabase
         .from('respuestas')
-        .select('id')
+        .select('id', { count: 'exact', head: true }) // Más eficiente
         .eq('seccion_id', id);
-      
+
       if (errorConsulta) throw errorConsulta;
-      
-      if (respuestasAsociadas && respuestasAsociadas.length > 0) {
-        setError(`No se puede eliminar esta sección porque tiene ${respuestasAsociadas.length} respuesta(s) asociada(s).`);
+
+      if (count && count > 0) {
+        setError(`No se puede eliminar esta sección porque tiene ${count} respuesta(s) asociada(s).`);
         setConfirmandoEliminacion(null);
         setCargando(false);
         return;
       }
-      
+
       const { error } = await supabase
         .from('secciones')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
-      
+
       setConfirmandoEliminacion(null);
       cargarDatos();
     } catch (error: any) {
@@ -193,11 +198,17 @@ const Secciones = () => {
     cargarDatos();
   }, []);
 
+  // --- INICIO: Lógica de filtrado añadida ---
+  const seccionesFiltradas = filtroSector
+    ? secciones.filter(seccion => seccion.sector_id === filtroSector)
+    : secciones;
+  // --- FIN: Lógica de filtrado añadida ---
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h1 className="text-2xl font-bold mb-6">Mantenimiento de Secciones</h1>
-      
-      {/* Formulario para agregar nueva sección */}
+
+      {/* Formulario para agregar nueva sección (sin cambios) */}
       <div className="mb-6 bg-gray-50 p-4 rounded-lg">
         <h2 className="text-lg font-semibold mb-3">Agregar Nueva Sección</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -239,25 +250,52 @@ const Secciones = () => {
           {cargando ? 'Agregando...' : 'Crear Sección'}
         </button>
       </div>
-      
-      {/* Mensaje de error */}
+
+      {/* Mensaje de error (sin cambios) */}
       {error && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
           <p>{error}</p>
         </div>
       )}
-      
+
+      {/* --- INICIO: Filtro añadido --- */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Filtrar por Comisaría
+        </label>
+        <select
+          value={filtroSector}
+          onChange={(e) => setFiltroSector(e.target.value)}
+          className="border rounded p-2 w-full md:w-1/2" // Clases del componente Preguntas
+        >
+          <option value="">Todas las comisarías</option>
+          {sectores.map((sector) => (
+            <option key={sector.id} value={sector.id}>
+              {sector.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+      {/* --- FIN: Filtro añadido --- */}
+
+
       {/* Lista de secciones */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Secciones Existentes</h2>
-        
+        {/* Título de la tabla actualizado */}
+        <h2 className="text-lg font-semibold mb-3">
+          Secciones Existentes {filtroSector && '(Filtradas)'}
+        </h2>
+
         {cargando && secciones.length === 0 ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
             <p className="mt-2 text-gray-500">Cargando secciones...</p>
           </div>
-        ) : secciones.length === 0 ? (
-          <p className="text-gray-500 italic py-4">No hay secciones registradas.</p>
+        /* Mensaje "sin resultados" actualizado */
+        ) : seccionesFiltradas.length === 0 ? (
+          <p className="text-gray-500 italic py-4">
+            {filtroSector ? 'No hay secciones para la comisaría seleccionada.' : 'No hay secciones registradas.'}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
@@ -268,8 +306,9 @@ const Secciones = () => {
                   <th className="py-3 px-6 text-right">Acciones</th>
                 </tr>
               </thead>
+              {/* Mapeo de la tabla actualizado */}
               <tbody className="text-gray-600 text-sm">
-                {secciones.map((seccion) => (
+                {seccionesFiltradas.map((seccion) => (
                   <tr key={seccion.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="py-3 px-6 text-left">
                       {editandoId === seccion.id ? (
@@ -299,7 +338,8 @@ const Secciones = () => {
                           ))}
                         </select>
                       ) : (
-                        seccion.sector?.nombre
+                        // Mostrar N/A si la relación no se cargó correctamente
+                        seccion.sector?.nombre || 'N/A'
                       )}
                     </td>
                     <td className="py-3 px-6 text-right">
